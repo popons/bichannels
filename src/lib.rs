@@ -48,7 +48,7 @@ use std::sync::mpsc::{Sender, Receiver, channel, RecvError, SendError};
 
 pub struct Endpoint<T1, T2> {
     sender: Sender<T1>,
-    receiver: Receiver<T2>
+    pub receiver: Receiver<T2>
 }
 
 // unsafe impl<T1: Send, T2: Send> Send for Endpoint<T1, T2> {}

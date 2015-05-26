@@ -18,21 +18,29 @@ We call these ends Endpoints.
 ```rust
 extern crate bichannels;
 
-fn main() {
-    let bichannels::BiChannel{e1:e1, e2:e2} = bichannels::BiChannel::new();
+use std::thread;
+use bichannels::{BiChannel};
 
-    spawn(proc(){
-      e2.send("Hello");
-      let r = e2.recv();
-      println!("Endpoint 2 got: {}", r);
+fn main() {
+    let BiChannel{a, b} = BiChannel::new();
+    let from_a = "hello";
+    let from_b = 100;
+
+    let at = thread::spawn(move || {
+        let _ = a.send(from_a);
+        a.recv().unwrap()
     });
 
-    println!("Endpoint 1 got: {}", e1.recv());
-    e1.send("Oh, hai.");
+    let bt = thread::spawn(move || {
+        let _ = b.send(from_b);
+        b.recv().unwrap()
+    });
+
+    let to_a = at.join().unwrap();
+    assert_eq!(to_a, from_b);
+
+    let to_b = bt.join().unwrap();
+    assert_eq!(to_b, from_a);
 }
 ```
 
-# Unstable
-
-This library is unstable because channels themselves
-are unstable in Rust.

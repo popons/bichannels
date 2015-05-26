@@ -18,68 +18,101 @@
 //! ```
 //! extern crate bichannels;
 //!
+//! use std::thread;
+//! use bichannels::{BiChannel};
+//!
 //! fn main() {
-//!
-//!   let bichannels::BiChannel{e1:e1, e2:e2} = bichannels::BiChannel::new();
-//!
-//!   spawn(proc(){
-//!     e2.send("Hello");
-//!     let r = e2.recv();
-//!     println!("Endpoint 2 got: {}", r);
-//!   });
-//!
-//!   println!("Endpoint 1 got: {}", e1.recv());
-//!   e1.send("Oh, hai.");
-//!
+//!     let BiChannel{a, b} = BiChannel::new();
+//!     let from_a = "hello";
+//!     let from_b = 100;
+//!                                             
+//!     let at = thread::spawn(move || {
+//!         let _ = a.send(from_a);
+//!         a.recv().unwrap()
+//!     });
+//!                                             
+//!     let bt = thread::spawn(move || {
+//!         let _ = b.send(from_b);
+//!         b.recv().unwrap()
+//!     });
+//!                                             
+//!     let to_a = at.join().unwrap();
+//!     assert_eq!(to_a, from_b);
+//!                                             
+//!     let to_b = bt.join().unwrap();
+//!     assert_eq!(to_b, from_a);
 //! }
 //! ```
-//!
-//! # Unstable
-//!
-//! This library is unstable because, channels themselves
-//! are unstable in Rust.
-//!
 
 use std::sync::mpsc::{Sender, Receiver, channel, RecvError, SendError};
 
-pub struct Endpoint<T> {
-  sender: Sender<T>,
-  receiver: Receiver<T>
+pub struct Endpoint<T1, T2> {
+    sender: Sender<T1>,
+    receiver: Receiver<T2>
 }
 
-impl<T: Send> Endpoint<T> {
-  pub fn new() -> (Endpoint<T>, Endpoint<T>) {
-    let (tx, rx) = channel();
-    let (tx2, rx2) = channel();
+// unsafe impl<T1: Send, T2: Send> Send for Endpoint<T1, T2> {}
 
-    (Endpoint {sender: tx2, receiver: rx},
-     Endpoint {sender: tx, receiver: rx2})
-  }
-
-  pub fn recv(&self) -> Result<T, RecvError> {
-    self.receiver.recv()
-  }
-
-  pub fn send(&self, t: T) -> Result<(), SendError<T>>{
-    self.sender.send(t)
-  }
-
-}
-
-pub struct BiChannel<T> {
-  pub e1: Endpoint<T>,
-  pub e2: Endpoint<T>
-}
-
-impl<T: Send> BiChannel<T> {
-
-  pub fn new() -> BiChannel<T> {
-
-    let (e1, e2) = Endpoint::new();
-
-    BiChannel {
-      e1: e1,
-      e2: e2
+impl<T1: Send, T2: Send> Endpoint<T1, T2> {
+    pub fn send(&self, t: T1) -> Result<(), SendError<T1>>{
+        self.sender.send(t)
     }
-  }
+    pub fn recv(&self) -> Result<T2, RecvError> {
+        self.receiver.recv()
+    }
+}
+
+pub struct BiChannel<T1, T2> {
+    pub a: Endpoint<T1, T2>,
+    pub b: Endpoint<T2, T1>
+}
+
+impl<T1: Send, T2: Send> BiChannel<T1, T2> {
+    pub fn new() -> BiChannel<T1, T2> {
+        let (tx1, rx1) = channel();
+        let (tx2, rx2) = channel();
+        BiChannel {
+            a: Endpoint{ sender: tx1, receiver: rx2 },
+            b: Endpoint{ sender: tx2, receiver: rx1 },
+        }
+    }
+}
+
+#[test]
+fn test1() {
+    let BiChannel{a, b} = BiChannel::new();
+
+    let ad = "1";
+    let _ = a.send(ad.to_string());
+    let ar = b.recv().unwrap();
+
+    let bd = 1;
+    let _ = b.send(bd);
+    let br = a.recv().unwrap();
+
+    assert_eq!(ad.to_string(), ar);
+    assert_eq!(bd, br);
+}
+#[test]
+fn test_thread() {
+    use std::thread;
+    let BiChannel{a, b} = BiChannel::new();
+    let from_a = "hello";
+    let from_b = 100;
+
+    let at = thread::spawn(move || {
+        let _ = a.send(from_a);
+        a.recv().unwrap()
+    });
+
+    let bt = thread::spawn(move || {
+        let _ = b.send(from_b);
+        b.recv().unwrap()
+    });
+
+    let to_a = at.join().unwrap();
+    assert_eq!(to_a, from_b);
+
+    let to_b = bt.join().unwrap();
+    assert_eq!(to_b, from_a);
 }

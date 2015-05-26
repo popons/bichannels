@@ -25,20 +25,20 @@
 //!     let BiChannel{a, b} = BiChannel::new();
 //!     let from_a = "hello";
 //!     let from_b = 100;
-//!                                             
+//!
 //!     let at = thread::spawn(move || {
 //!         let _ = a.send(from_a);
 //!         a.recv().unwrap()
 //!     });
-//!                                             
+//!
 //!     let bt = thread::spawn(move || {
 //!         let _ = b.send(from_b);
 //!         b.recv().unwrap()
 //!     });
-//!                                             
+//!
 //!     let to_a = at.join().unwrap();
 //!     assert_eq!(to_a, from_b);
-//!                                             
+//!
 //!     let to_b = bt.join().unwrap();
 //!     assert_eq!(to_b, from_a);
 //! }

@@ -42,7 +42,8 @@
 //! are unstable in Rust.
 //!
 
-#[unstable]
+use std::sync::mpsc::{Sender, Receiver, channel, RecvError, SendError};
+
 pub struct Endpoint<T> {
   sender: Sender<T>,
   receiver: Receiver<T>
@@ -57,17 +58,16 @@ impl<T: Send> Endpoint<T> {
      Endpoint {sender: tx, receiver: rx2})
   }
 
-  pub fn recv(&self) -> T {
+  pub fn recv(&self) -> Result<T, RecvError> {
     self.receiver.recv()
   }
 
-  pub fn send(&self, t: T) {
-    self.sender.send(t);
+  pub fn send(&self, t: T) -> Result<(), SendError<T>>{
+    self.sender.send(t)
   }
 
 }
 
-#[unstable]
 pub struct BiChannel<T> {
   pub e1: Endpoint<T>,
   pub e2: Endpoint<T>

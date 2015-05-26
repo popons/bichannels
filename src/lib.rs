@@ -1,5 +1,3 @@
-#![crate_name = "bichannels"]
-
 //! # Bidirectional Channels
 //!
 //! This library implements bidirectional channels in Rust.

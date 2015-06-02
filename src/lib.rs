@@ -47,7 +47,7 @@
 use std::sync::mpsc::{Sender, Receiver, channel, RecvError, SendError};
 
 pub struct Endpoint<T1, T2> {
-    sender: Sender<T1>,
+    pub sender: Sender<T1>,
     pub receiver: Receiver<T2>
 }
 
